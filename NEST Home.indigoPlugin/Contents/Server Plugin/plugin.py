@@ -1288,14 +1288,19 @@ def refreshIcons(dev, nestHvac):
     if nestHeating:
         dev.updateStateOnServer('isheating', 'Yes')
         dev.updateStateOnServer('heatOrCool', 'Heating')
+        dev.updateStateOnServer("hvacHeaterIsOn", True)
     else:
         dev.updateStateOnServer('isheating', 'No')
+        dev.updateStateOnServer("hvacHeaterIsOn", False)
+
 
     if nestCooling:
         dev.updateStateOnServer('iscooling', 'Yes')
         dev.updateStateOnServer('heatOrCool', 'Cooling')
+        dev.updateStateOnServer("hvacCoolerIsOn", True)
     else:
         dev.updateStateOnServer('iscooling', 'No')
+        dev.updateStateOnServer("hvacCoolerIsOn", False)
 
     if not nestHeating and not nestCooling and not nestMode == 'off':
         dev.updateStateOnServer('heatOrCool', "Saving Energy")

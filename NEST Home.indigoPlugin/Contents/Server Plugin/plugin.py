@@ -238,6 +238,8 @@ def setupAPI(nestTest):
     vStatesThermo.append("time_to_target")
     vStatesThermo.append("time_to_target_training")
     vStatesThermo.append("structure_id")
+    vStatesThermo.append("last_hvac_action")
+    vStatesThermo.append("last_hvac_action_time")
 
     # Finally create placeholders for the Plugin Configs that are held in the NEST structure
     vPluginOther = []
@@ -1118,6 +1120,39 @@ def nestKeyFieldUpdate(dev):
             else:
                 dev.updateStateOnServer('heatpointTrigger', value='false')
 
+            # Update single-mode setpoint to simplify external scripting and charting
+            # Set immediately, not as part of setpointCool/setpointHeat updating
+            # because this value won't actually be used for heat-cool mode
+            if nestAmbient <= nestTempHeat:
+                if nestDebug:
+                    indigo.server.log('nestAmbient <= nestTempHeat :: ' + str(nestAmbient) + ' <= ' + str(nestTempHeat))
+                dev.updateStateOnServer('target_temperature_' + nestScale, nestTempHeat)
+                dev.updateStateOnServer('target_temperature_' + nestScale + '_int', int((nestTempHeat) + 0.5))
+            elif nestAmbient >= nestTempCool:
+                if nestDebug:
+                    indigo.server.log('nestAmbient >= nestTempCool :: ' + str(nestAmbient) + ' >= ' + str(nestTempCool))
+                dev.updateStateOnServer('target_temperature_' + nestScale, nestTempCool)
+                dev.updateStateOnServer('target_temperature_' + nestScale + '_int', int((nestTempCool) + 0.5))
+            else:
+                if nestDebug:
+                    indigo.server.log('nestTempHeat < nestAmbient < nestTempCool :: ' + str(nestTempHeat) + ' < ' + str(nestAmbient) + ' < ' + str(nestTempCool))
+                # when the current temp is between the setpoints we need to know the last hvac state to pick the right target to use
+                lastHvacAction = dev.states['last_hvac_action']
+                if lastHvacAction == 'Heating':
+                    # Last action was heating so the target must have been the low setpoint
+                    dev.updateStateOnServer('target_temperature_' + nestScale, nestTempHeat)
+                    dev.updateStateOnServer('target_temperature_' + nestScale + '_int', int((nestTempHeat) + 0.5))
+                elif lastHvacAction == 'Cooling':
+                    # Last action was heating so the target must have been the low setpoint
+                    dev.updateStateOnServer('target_temperature_' + nestScale, nestTempCool)
+                    dev.updateStateOnServer('target_temperature_' + nestScale + '_int', int((nestTempCool) + 0.5))
+                else:
+                    # Last action was undefined so don't do anything
+                    if nestDebug:
+                        indigo.server.log('Last action was undefined, not setting target temperature')
+
+
+
         elif dev.states['hvac_mode'] <> 'heat-cool':
             if dev.states['can_cool'] and dev.states['hvac_mode'] == 'cool':
                 # Set cool
@@ -1289,6 +1324,8 @@ def refreshIcons(dev, nestHvac):
         dev.updateStateOnServer('isheating', 'Yes')
         dev.updateStateOnServer('heatOrCool', 'Heating')
         dev.updateStateOnServer("hvacHeaterIsOn", True)
+        dev.updateStateOnServer("last_hvac_action", 'Heating')
+        dev.updateStateOnServer("last_hvac_action_time", datetime.Now)
     else:
         dev.updateStateOnServer('isheating', 'No')
         dev.updateStateOnServer("hvacHeaterIsOn", False)
@@ -1298,6 +1335,8 @@ def refreshIcons(dev, nestHvac):
         dev.updateStateOnServer('iscooling', 'Yes')
         dev.updateStateOnServer('heatOrCool', 'Cooling')
         dev.updateStateOnServer("hvacCoolerIsOn", True)
+        dev.updateStateOnServer("last_hvac_action", 'Cooling')
+        dev.updateStateOnServer("last_hvac_action_time", datetime.Now)
     else:
         dev.updateStateOnServer('iscooling', 'No')
         dev.updateStateOnServer("hvacCoolerIsOn", False)

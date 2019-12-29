@@ -503,6 +503,21 @@
 				<TriggerLabel>NEST Client Version</TriggerLabel>
 				<ControlPageLabel>NEST Client Version</ControlPageLabel>
 			</State>
+      
+            <State id="last_hvac_action" readonly="YES">
+              <ValueType>String</ValueType>
+              <TriggerLabel>asdf</TriggerLabel>
+              <ControlPageLabel>asdf</ControlPageLabel>
+            </State>
+
+                  <State id="last_hvac_action_time" readonly="YES">
+                    <ValueType>String</ValueType>
+                    <TriggerLabel>asdf</TriggerLabel>
+                    <ControlPageLabel>asdf</ControlPageLabel>
+                  </State>
+
+
+
 		</States>
         <UiDisplayStateId>humidity</UiDisplayStateId>
 	</Device>
